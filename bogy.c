@@ -7,11 +7,15 @@
 #include <ctype.h>
 #include <errno.h>
 
+/***defines***/
+
+#define CTRL(k) ((k) & 0x1f)
+
 /*** variables ***/
 
 struct termios originalTermios;
 
-/*** functions ***/
+/*** terminal funcs ***/
 
 void die( const char* s )
 {
@@ -49,6 +53,29 @@ void enableRawMode()
     }
 }
 
+char editorReadKey()
+{
+    int nread;
+    char character;
+    while ( ( nread = read( STDIN_FILENO, &character, 1 ) ) != 1 )
+    {
+        if ( nread == -1 && errno != EAGAIN ) die( "read" );
+    }
+    return character;
+}
+
+void processKeyPresses()
+{
+    char character = editorReadKey();
+
+    switch (character) 
+    {
+        case CTRL('q'):
+            exit(0);
+            break;
+    }
+}
+
 /*** main ***/
 
 int main()
@@ -58,18 +85,7 @@ int main()
 
     while ( 1 )
     {
-        char character = '\0';
-        if ( read( STDIN_FILENO, &character, 1 ) < 0 && errno != EAGAIN ) die( "read" );
-        if ( iscntrl( character ) )
-        {
-            printf( "%d\r\n", character );
-        }
-        else
-        {
-            printf( "%d ('%c')\r\n", character, character );
-        }
-
-        if ( character == 'q' ) break;
+        processKeyPresses();
     }
 
     return 0;
